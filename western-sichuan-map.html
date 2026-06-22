@@ -1,0 +1,737 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>川西地名标注地图</title>
+  <link rel="icon" href="data:,">
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    crossorigin="">
+  <style>
+    @media print {
+      @page { size: A0 landscape; margin: 0; }
+      html, body { width: 1189mm; height: 841mm; margin: 0; overflow: hidden; }
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      #map { width: 100% !important; height: 100% !important; }
+      .panel { width: 190mm; max-height: calc(100vh - 20mm); left: 12mm; top: 12mm; padding: 8mm 9mm 9mm; }
+      h1 { font-size: 20pt; }
+      .subtitle { font-size: 10.5pt; }
+      .summary { font-size: 11pt; }
+      .route-list { font-size: 10pt; gap: 3mm 4mm; }
+      .segment-list { font-size: 8.5pt; }
+      .note { font-size: 8.5pt; }
+      .leaflet-control-container { display: none !important; }
+      .leaflet-marker-icon, .leaflet-marker-shadow { image-rendering: auto; }
+      .leaflet-tooltip.place-label { font-size: 9.5pt; }
+      .number-marker { width: 7mm; height: 7mm; font-size: 9pt; }
+      .distance-marker { font-size: 8.5pt; padding: 1mm 2mm; }
+    }
+
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif;
+      color: #17221a;
+      background: #e7ebdf;
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+      --place-label-font-size: 10px;
+      --distance-label-font-size: 9px;
+      --distance-label-small-font-size: 8px;
+      --marker-font-size: 11px;
+    }
+
+    .panel {
+      position: absolute;
+      z-index: 900;
+      left: 18px;
+      top: 18px;
+      width: min(330px, calc(100vw - 36px));
+      max-height: calc(100vh - 36px);
+      overflow: auto;
+      box-sizing: border-box;
+      padding: 14px 16px 16px;
+      border: 1px solid rgba(33, 46, 35, 0.14);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.93);
+      box-shadow: 0 14px 34px rgba(20, 32, 23, 0.18);
+      backdrop-filter: blur(8px);
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 20px;
+      line-height: 1.25;
+      font-weight: 700;
+    }
+
+    .subtitle {
+      margin: 0 0 12px;
+      font-size: 12px;
+      line-height: 1.55;
+      color: #5e6a60;
+    }
+
+    .summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 0 0 12px;
+      padding: 8px 10px;
+      border-radius: 6px;
+      background: #edf5ef;
+      color: #1e4f3f;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .summary strong {
+      font-weight: 700;
+    }
+
+    .summary span {
+      white-space: nowrap;
+      font-weight: 700;
+    }
+
+    .summary.loop-summary {
+      background: #fff3df;
+      color: #7a3d00;
+    }
+
+    .loop-summary {
+      display: grid;
+      gap: 3px;
+      margin: 0 0 12px;
+      padding: 8px 10px;
+      border-radius: 6px;
+      background: #f8f2e8;
+      color: #4f321e;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .loop-summary strong {
+      font-weight: 700;
+    }
+
+    .loop-summary span {
+      color: #73513a;
+    }
+
+    .route-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 10px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .route-list li {
+      display: flex;
+      align-items: center;
+      min-width: 0;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .index {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      flex: 0 0 20px;
+      border-radius: 50%;
+      background: #1f6f59;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .index.loop-index {
+      background: #d97817;
+    }
+
+    .loop-index {
+      color: #fff;
+      border: 2px solid #fff;
+      box-sizing: border-box;
+    }
+
+    .name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .note {
+      margin: 12px 0 0;
+      font-size: 11px;
+      line-height: 1.45;
+      color: #6c7468;
+    }
+
+    .section-title {
+      margin: 14px 0 8px;
+      font-size: 13px;
+      line-height: 1.25;
+      font-weight: 700;
+      color: #25372c;
+    }
+
+    .segment-list {
+      display: grid;
+      gap: 5px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      font-size: 11px;
+      line-height: 1.35;
+      color: #39463d;
+    }
+
+    .segment-list li {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(31, 111, 89, 0.12);
+    }
+
+    .segment-list span:first-child {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .segment-list span:last-child {
+      flex: 0 0 auto;
+      font-weight: 700;
+      color: #b15d00;
+    }
+
+    .leaflet-tooltip.place-label {
+      padding: 3px 6px;
+      border: 1px solid rgba(28, 79, 62, 0.22);
+      border-radius: 5px;
+      background: rgba(255, 255, 255, 0.93);
+      color: #18281f;
+      box-shadow: 0 4px 12px rgba(15, 28, 18, 0.16);
+      font-size: var(--place-label-font-size);
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .leaflet-tooltip.place-label::before {
+      display: none;
+    }
+
+    .number-marker {
+      display: grid;
+      place-items: center;
+      width: 24px;
+      height: 24px;
+      border: 2px solid #ffffff;
+      border-radius: 50%;
+      background: #1f6f59;
+      color: #ffffff;
+      box-shadow: 0 2px 10px rgba(11, 28, 18, 0.35);
+      font-size: var(--marker-font-size);
+      font-weight: 700;
+    }
+
+    .number-marker.loop-number-marker {
+      background: #d97817;
+    }
+
+    .distance-marker {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      min-width: 74px;
+      min-height: 28px;
+      box-sizing: border-box;
+      padding: 3px 7px;
+      border: 1px solid rgba(137, 74, 7, 0.3);
+      border-radius: 5px;
+      background: rgba(255, 247, 227, 0.96);
+      color: #7a3d00;
+      box-shadow: 0 2px 8px rgba(36, 22, 8, 0.18);
+      font-size: var(--distance-label-font-size);
+      font-weight: 700;
+      line-height: 1.12;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .distance-marker small {
+      color: #49564b;
+      font-size: var(--distance-label-small-font-size);
+      font-weight: 700;
+    }
+
+    .distance-marker.loop-distance-marker {
+      border-color: rgba(187, 97, 9, 0.42);
+      background: rgba(255, 241, 213, 0.97);
+      color: #7a3d00;
+    }
+
+    @media (max-width: 760px) {
+      .panel {
+        left: 10px;
+        top: 10px;
+        max-height: 42vh;
+        padding: 12px;
+      }
+
+      h1 {
+        font-size: 17px;
+      }
+
+      .route-list {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media print {
+      @page { size: A0 landscape; margin: 0; }
+      html,
+      body,
+      #map {
+        width: 1189mm !important;
+        height: 841mm !important;
+        margin: 0 !important;
+        overflow: hidden !important;
+      }
+
+      body {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      .panel {
+        width: 190mm !important;
+        max-height: calc(100vh - 20mm) !important;
+        left: 12mm !important;
+        top: 12mm !important;
+        padding: 8mm 9mm 9mm !important;
+      }
+      .leaflet-control-container {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <aside class="panel" aria-label="川西路线地点清单">
+    <h1>川西地名标注地图</h1>
+    <p class="subtitle">按图片中的川西段、川西小环线和新增川藏线顺序标注，底图为 OpenStreetMap 真实地图。橙色闭环为新增川西小环线。</p>
+    <p class="summary"><strong>川藏线主线 OSRM 估算里程 / 时间</strong><span>约 2466.3 km / 30小时51分</span></p>
+    <p class="loop-summary"><strong>新增川西小环线 1-16</strong><span>约 985.3 km / 15小时1分</span></p>
+    <h2 class="section-title">川藏线主线节点</h2>
+    <ol class="route-list" id="routeList"></ol>
+    <h2 class="section-title">川西小环线新增点</h2>
+    <ol class="route-list" id="smallLoopList"></ol>
+    <h2 class="section-title">小环线新增路段</h2>
+    <ol class="segment-list" id="smallLoopSegmentList"></ol>
+    <h2 class="section-title">川藏线主线分段骑行里程与时间</h2>
+    <ol class="segment-list" id="segmentList"></ol>
+    <p class="note">注：小环线 11-16 为图片新增节点，按公开地图近似定位。色季拉山口按 G318 鲁朗至林芝之间的山口代表位置取点。分段里程和时间调用 OSRM 路网 API 的 driving profile 估算，作为摩托车道路骑行近似值，不包含休息、拍照、加油、路况等待和本地摩托车禁限行规则。</p>
+  </aside>
+
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""></script>
+  <script>
+    const places = [
+      { name: "成都", lat: 30.659867, lng: 104.063315, labelDirection: "right", labelOffset: [8, 0] },
+      { name: "映秀", lat: 31.056495, lng: 103.486295, labelDirection: "top", labelOffset: [0, -8] },
+      { name: "猫鼻梁观景台", lat: 30.988997, lng: 102.842358, labelDirection: "bottom", labelOffset: [0, 9] },
+      { name: "四姑娘山", lat: 30.995599, lng: 102.830852, labelDirection: "top", labelOffset: [0, -8] },
+      { name: "丹巴县", lat: 30.879309, lng: 101.883298, labelDirection: "bottom", labelOffset: [0, 9] },
+      { name: "雅拉雪山", lat: 30.380818, lng: 101.699816, labelDirection: "right", labelOffset: [8, 0] },
+      { name: "墨石公园", lat: 30.449590, lng: 101.541669, labelDirection: "left", labelOffset: [-8, 0] },
+      { name: "姑弄村", lat: 30.355999, lng: 101.516590, labelDirection: "left", labelOffset: [-8, 0] },
+      { name: "塔公草原", lat: 30.337029, lng: 101.560724, labelDirection: "right", labelOffset: [8, 0] },
+      { name: "新都桥", lat: 30.046713, lng: 101.491804, labelDirection: "left", labelOffset: [-8, 0] },
+      { name: "雅江", lat: 30.035136, lng: 101.013923, labelDirection: "bottom", labelOffset: [0, 9] },
+      { name: "理塘", lat: 29.993978, lng: 100.267429, labelDirection: "top", labelOffset: [0, -8] },
+      { name: "巴塘", lat: 30.010120, lng: 99.112373, labelDirection: "top", labelOffset: [0, -8] },
+      { name: "芒康", lat: 29.683007, lng: 98.595084, labelDirection: "bottom", labelOffset: [0, 9] },
+      { name: "东达山口", lat: 29.710607, lng: 98.003150, labelDirection: "top", labelOffset: [0, -8] },
+      { name: "八宿", lat: 30.056198, lng: 96.917397, labelDirection: "top", labelOffset: [0, -8] },
+      { name: "然乌", lat: 29.505575, lng: 96.750917, labelDirection: "bottom", labelOffset: [0, 9] },
+      { name: "波密", lat: 29.861951, lng: 95.767064, labelDirection: "top", labelOffset: [0, -8] },
+      { name: "通麦", lat: 30.102619, lng: 95.084544, labelDirection: "top", labelOffset: [0, -8] },
+      { name: "色季拉山口", lat: 29.627306, lng: 94.657888, labelDirection: "bottom", labelOffset: [0, 9] },
+      { name: "林芝", lat: 29.651045, lng: 94.360232, labelDirection: "bottom", labelOffset: [0, 9] },
+      { name: "米拉山口", lat: 29.827323, lng: 92.343693, labelDirection: "top", labelOffset: [0, -8] },
+      { name: "拉萨", lat: 29.654205, lng: 91.117302, labelDirection: "bottom", labelOffset: [0, 9] },
+      { name: "日喀则", lat: 29.271376, lng: 88.880682, labelDirection: "left", labelOffset: [-8, 0] }
+    ];
+
+    const segmentDistancesKm = [
+      78.6, 115.4, 7.4, 111.2, 122.8, 34.6, 21.9,
+      9.0, 45.9, 65.5, 131.6, 168.4, 104.9, 107.9, 233.5, 89.1,
+      127.8, 88.0, 90.4, 49.1, 249.9, 154.0, 259.3
+    ];
+
+    const segmentDurationsMin = [
+      57, 84, 7, 82, 121, 62, 25,
+      16, 40, 47, 93, 120, 77, 77, 165, 63,
+      90, 64, 64, 35, 171, 111, 179
+    ];
+
+    const smallLoopPlaces = [
+      { number: 1, name: "成都", lat: 30.659867, lng: 104.063315, labelDirection: "right", labelOffset: [8, 0] },
+      { number: 2, name: "映秀", lat: 31.056495, lng: 103.486295, labelDirection: "right", labelOffset: [8, 0] },
+      { number: 3, name: "猫鼻梁观景台", lat: 30.988997, lng: 102.842358, labelDirection: "bottom", labelOffset: [0, 9] },
+      { number: 4, name: "四姑娘山", lat: 30.995599, lng: 102.830852, labelDirection: "top", labelOffset: [0, -8] },
+      { number: 5, name: "丹巴县", lat: 30.879309, lng: 101.883298, labelDirection: "bottom", labelOffset: [0, 9] },
+      { number: 6, name: "雅拉雪山", lat: 30.380818, lng: 101.699816, labelDirection: "right", labelOffset: [8, 0] },
+      { number: 7, name: "墨石公园", lat: 30.449590, lng: 101.541669, labelDirection: "left", labelOffset: [-8, 0] },
+      { number: 8, name: "姑弄村", lat: 30.355999, lng: 101.516590, labelDirection: "left", labelOffset: [-8, 0] },
+      { number: 9, name: "塔公草原", lat: 30.337029, lng: 101.560724, labelDirection: "right", labelOffset: [8, 0] },
+      { number: 10, name: "新都桥", lat: 30.046713, lng: 101.491804, labelDirection: "left", labelOffset: [-8, 0] },
+      { number: 11, name: "鱼子西", lat: 30.164478, lng: 101.600460, labelDirection: "bottom", labelOffset: [0, 9] },
+      { number: 12, name: "红海子", lat: 30.184337, lng: 101.775382, labelDirection: "top", labelOffset: [0, -8] },
+      { number: 13, name: "彩虹机场", lat: 30.142464, lng: 101.738720, labelDirection: "left", labelOffset: [-8, 0] },
+      { number: 14, name: "木格措", lat: 30.190276, lng: 101.903277, labelDirection: "right", labelOffset: [8, 0] },
+      { number: 15, name: "康定", lat: 30.051300, lng: 101.960300, labelDirection: "bottom", labelOffset: [0, 9] },
+      { number: 16, name: "雅安", lat: 30.013092, lng: 103.040204, labelDirection: "right", labelOffset: [8, 0] }
+    ];
+
+    const smallLoopSegmentDistancesKm = [
+      24.9, 44.3, 16.4, 51.0, 19.7, 146.3, 135.9
+    ];
+
+    const smallLoopSegmentDurationsMin = [
+      31, 63, 33, 59, 20, 106, 95
+    ];
+
+    const smallLoopOnlyPlaces = smallLoopPlaces.filter((place) => place.number >= 11);
+    const smallLoopTailPlaces = [smallLoopPlaces[9], ...smallLoopOnlyPlaces, smallLoopPlaces[0]];
+
+    const displayNumber = (index) => index <= 9 ? index + 1 : index + 7;
+    const mainLabelMinZoom = (index) => {
+      const number = displayNumber(index);
+      if ([1, 10, 17, 21, 25, 29, 30].includes(number)) return 5;
+      if ([5, 18, 23, 27].includes(number)) return 6;
+      return 7;
+    };
+    const smallLoopLabelMinZoom = () => 7;
+    const segmentLabelMinZoom = (index) => {
+      if (index >= 4 && index <= 9) return 9;
+      return 8;
+    };
+    const smallLoopSegmentLabelMinZoom = (index) => index >= 5 ? 7 : 8;
+    const labelEntries = [];
+    const distanceEntries = [];
+    const formatDuration = (minutes) => {
+      const hours = Math.floor(minutes / 60);
+      const mins = minutes % 60;
+      return hours > 0 ? `${hours}小时${mins}分` : `${mins}分`;
+    };
+
+    const map = L.map("map", {
+      zoomControl: false,
+      preferCanvas: false
+    });
+
+    L.control.zoom({ position: "topright" }).addTo(map);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 18,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    const routeLatLngs = places.map((place) => [place.lat, place.lng]);
+    const smallLoopLatLngs = smallLoopPlaces.map((place) => [place.lat, place.lng]);
+    const closedSmallLoopLatLngs = [...smallLoopLatLngs, smallLoopLatLngs[0]];
+
+    L.polyline(routeLatLngs, {
+      color: "#235f4b",
+      weight: 4,
+      opacity: 0.82,
+      lineJoin: "round"
+    }).addTo(map);
+
+    L.polyline(closedSmallLoopLatLngs, {
+      color: "#fff8ec",
+      weight: 8,
+      opacity: 0.82,
+      lineCap: "round",
+      lineJoin: "round"
+    }).addTo(map);
+
+    L.polyline(closedSmallLoopLatLngs, {
+      color: "#d97817",
+      weight: 4,
+      opacity: 0.95,
+      lineCap: "round",
+      lineJoin: "round"
+    }).addTo(map);
+
+    places.forEach((place, index) => {
+      const number = displayNumber(index);
+      const icon = L.divIcon({
+        className: "",
+        html: `<span class="number-marker">${number}</span>`,
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
+      });
+
+      const marker = L.marker([place.lat, place.lng], { icon })
+        .addTo(map)
+        .bindTooltip(`${number}. ${place.name}`, {
+          permanent: false,
+          direction: place.labelDirection,
+          offset: place.labelOffset,
+          className: "place-label"
+        })
+        .bindPopup(`<strong>${number}. ${place.name}</strong><br>${place.lat.toFixed(6)}, ${place.lng.toFixed(6)}`);
+
+      labelEntries.push({
+        marker,
+        minZoom: mainLabelMinZoom(index),
+        priority: mainLabelMinZoom(index) * 100 + number
+      });
+    });
+
+    smallLoopOnlyPlaces.forEach((place) => {
+      const icon = L.divIcon({
+        className: "",
+        html: `<span class="number-marker loop-number-marker">${place.number}</span>`,
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
+      });
+
+      const marker = L.marker([place.lat, place.lng], {
+        icon,
+        zIndexOffset: 700
+      })
+        .addTo(map)
+        .bindTooltip(`${place.number}. ${place.name}`, {
+          permanent: false,
+          direction: place.labelDirection,
+          offset: place.labelOffset,
+          className: "place-label"
+        })
+        .bindPopup(`<strong>${place.number}. ${place.name}</strong><br>${place.lat.toFixed(6)}, ${place.lng.toFixed(6)}`);
+
+      labelEntries.push({
+        marker,
+        minZoom: smallLoopLabelMinZoom(place),
+        priority: smallLoopLabelMinZoom(place) * 100 + place.number + 50
+      });
+    });
+
+    segmentDistancesKm.forEach((distance, index) => {
+      const from = places[index];
+      const to = places[index + 1];
+      const fromNumber = displayNumber(index);
+      const toNumber = displayNumber(index + 1);
+      const durationText = formatDuration(segmentDurationsMin[index]);
+      const midpoint = [
+        (from.lat + to.lat) / 2,
+        (from.lng + to.lng) / 2
+      ];
+      const icon = L.divIcon({
+        className: "",
+        html: `<span class="distance-marker"><span>${fromNumber}-${toNumber} ${distance.toFixed(1)}km</span><small>${durationText}</small></span>`,
+        iconSize: null,
+        iconAnchor: [34, 10]
+      });
+      const marker = L.marker(midpoint, {
+        icon,
+        interactive: false,
+        zIndexOffset: 500
+      });
+
+      distanceEntries.push({
+        marker,
+        minZoom: segmentLabelMinZoom(index),
+        priority: segmentLabelMinZoom(index) * 100 + index
+      });
+    });
+
+    smallLoopSegmentDistancesKm.forEach((distance, index) => {
+      const from = smallLoopTailPlaces[index];
+      const to = smallLoopTailPlaces[index + 1];
+      const durationText = formatDuration(smallLoopSegmentDurationsMin[index]);
+      const midpoint = [
+        (from.lat + to.lat) / 2,
+        (from.lng + to.lng) / 2
+      ];
+      const icon = L.divIcon({
+        className: "",
+        html: `<span class="distance-marker loop-distance-marker"><span>${from.number}-${to.number} ${distance.toFixed(1)}km</span><small>${durationText}</small></span>`,
+        iconSize: null,
+        iconAnchor: [34, 10]
+      });
+      const marker = L.marker(midpoint, {
+        icon,
+        interactive: false,
+        zIndexOffset: 650
+      });
+      const minZoom = smallLoopSegmentLabelMinZoom(index);
+
+      distanceEntries.push({
+        marker,
+        minZoom,
+        priority: minZoom * 100 + index + 40
+      });
+    });
+
+    const routeList = document.querySelector("#routeList");
+    places.forEach((place, index) => {
+      const number = displayNumber(index);
+      const item = document.createElement("li");
+      item.innerHTML = `<span class="index">${number}</span><span class="name">${place.name}</span>`;
+      routeList.appendChild(item);
+    });
+
+    const smallLoopList = document.querySelector("#smallLoopList");
+    smallLoopOnlyPlaces.forEach((place) => {
+      const item = document.createElement("li");
+      item.innerHTML = `<span class="index loop-index">${place.number}</span><span class="name">${place.name}</span>`;
+      smallLoopList.appendChild(item);
+    });
+
+    const smallLoopSegmentList = document.querySelector("#smallLoopSegmentList");
+    smallLoopSegmentDistancesKm.forEach((distance, index) => {
+      const from = smallLoopTailPlaces[index];
+      const to = smallLoopTailPlaces[index + 1];
+      const durationText = formatDuration(smallLoopSegmentDurationsMin[index]);
+      const item = document.createElement("li");
+      item.innerHTML = `<span>${from.number}-${to.number} ${from.name} → ${to.name}</span><span>${distance.toFixed(1)} km / ${durationText}</span>`;
+      smallLoopSegmentList.appendChild(item);
+    });
+
+    const segmentList = document.querySelector("#segmentList");
+    segmentDistancesKm.forEach((distance, index) => {
+      const from = places[index];
+      const to = places[index + 1];
+      const fromNumber = displayNumber(index);
+      const toNumber = displayNumber(index + 1);
+      const durationText = formatDuration(segmentDurationsMin[index]);
+      const item = document.createElement("li");
+      item.innerHTML = `<span>${fromNumber}-${toNumber} ${from.name} → ${to.name}</span><span>${distance.toFixed(1)} km / ${durationText}</span>`;
+      segmentList.appendChild(item);
+    });
+
+    const bounds = L.latLngBounds(routeLatLngs);
+    map.fitBounds(bounds, {
+      paddingTopLeft: [360, 40],
+      paddingBottomRight: [40, 40],
+      maxZoom: 9
+    });
+
+    const setZoomLabelStyles = (zoom) => {
+      const clampedZoom = Math.max(5, Math.min(10, zoom));
+      const placeFontSize = 9 + (clampedZoom - 5) * 0.8;
+      const distanceFontSize = 8 + (clampedZoom - 5) * 0.65;
+      const distanceSmallFontSize = 7 + (clampedZoom - 5) * 0.55;
+      const markerFontSize = 10 + (clampedZoom - 5) * 0.45;
+
+      map.getContainer().style.setProperty("--place-label-font-size", `${placeFontSize.toFixed(1)}px`);
+      map.getContainer().style.setProperty("--distance-label-font-size", `${distanceFontSize.toFixed(1)}px`);
+      map.getContainer().style.setProperty("--distance-label-small-font-size", `${distanceSmallFontSize.toFixed(1)}px`);
+      map.getContainer().style.setProperty("--marker-font-size", `${markerFontSize.toFixed(1)}px`);
+    };
+
+    const rectsOverlap = (a, b) => !(
+      a.right < b.left ||
+      a.left > b.right ||
+      a.bottom < b.top ||
+      a.top > b.bottom
+    );
+
+    const paddedRect = (element, padding = 3) => {
+      const rect = element.getBoundingClientRect();
+      return {
+        left: rect.left - padding,
+        top: rect.top - padding,
+        right: rect.right + padding,
+        bottom: rect.bottom + padding
+      };
+    };
+
+    const filterOverlappingMapLabels = () => {
+      const acceptedRects = [];
+      distanceEntries
+        .filter(({ marker }) => map.hasLayer(marker) && marker.getElement())
+        .sort((a, b) => a.priority - b.priority)
+        .forEach(({ marker }) => {
+          const element = marker.getElement().querySelector(".distance-marker") ?? marker.getElement();
+          const rect = paddedRect(element, 5);
+          const overlaps = acceptedRects.some((accepted) => rectsOverlap(rect, accepted));
+
+          if (overlaps) {
+            marker.removeFrom(map);
+          } else {
+            acceptedRects.push(rect);
+          }
+        });
+
+      const visibleLabels = labelEntries
+        .filter(({ marker }) => marker.getTooltip()?.getElement())
+        .sort((a, b) => a.priority - b.priority);
+
+      visibleLabels.forEach(({ marker }) => {
+        const element = marker.getTooltip().getElement();
+        const rect = paddedRect(element, 4);
+        const overlaps = acceptedRects.some((accepted) => rectsOverlap(rect, accepted));
+
+        if (overlaps) {
+          marker.closeTooltip();
+        } else {
+          acceptedRects.push(rect);
+        }
+      });
+    };
+
+    const updateZoomPresentation = () => {
+      const zoom = map.getZoom();
+      setZoomLabelStyles(zoom);
+
+      labelEntries.forEach(({ marker, minZoom }) => {
+        if (zoom >= minZoom) {
+          marker.openTooltip();
+        } else {
+          marker.closeTooltip();
+        }
+      });
+
+      distanceEntries.forEach(({ marker, minZoom }) => {
+        if (zoom >= minZoom && !map.hasLayer(marker)) {
+          marker.addTo(map);
+        } else if (zoom < minZoom && map.hasLayer(marker)) {
+          marker.removeFrom(map);
+        }
+      });
+
+      requestAnimationFrame(filterOverlappingMapLabels);
+    };
+
+    map.whenReady(updateZoomPresentation);
+    map.on("zoom zoomend moveend", updateZoomPresentation);
+    setTimeout(updateZoomPresentation, 300);
+  </script>
+</body>
+</html>
