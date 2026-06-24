@@ -370,7 +370,7 @@
     <ol class="segment-list" id="smallLoopSegmentList"></ol>
     <h2 class="section-title">川藏线主线分段骑行里程与时间</h2>
     <ol class="segment-list" id="segmentList"></ol>
-    <p class="note">注：小环线 11-16 为图片新增节点，按公开地图近似定位。色季拉山口按 G318 鲁朗至林芝之间的山口代表位置取点。分段里程和时间调用 OSRM 路网 API 的 driving profile 估算，作为摩托车道路骑行近似值；海拔趋势按 Open-Meteo DEM 查询的相邻标注点净海拔差计算，不等同于道路累计爬升。</p>
+    <p class="note">注：小环线 11-16 为图片新增节点，按公开地图近似定位。色季拉山口按 G318 鲁朗至林芝之间的山口代表位置取点。分段里程、时间和道路曲线调用 OSRM 路网 API 的 driving profile 估算，作为摩托车道路骑行近似值；海拔趋势按 Open-Meteo DEM 查询的相邻标注点净海拔差计算，不等同于道路累计爬升。</p>
   </aside>
 
   <script
@@ -498,7 +498,7 @@
 
     const map = L.map("map", {
       zoomControl: false,
-      preferCanvas: false
+      preferCanvas: true
     });
 
     L.control.zoom({ position: "topright" }).addTo(map);
@@ -511,29 +511,82 @@
     const routeLatLngs = places.map((place) => [place.lat, place.lng]);
     const smallLoopLatLngs = smallLoopPlaces.map((place) => [place.lat, place.lng]);
     const closedSmallLoopLatLngs = [...smallLoopLatLngs, smallLoopLatLngs[0]];
+    const closedSmallLoopPlaces = [...smallLoopPlaces, smallLoopPlaces[0]];
+    const mainRouteStyles = [
+      {
+        color: "#eef8ef",
+        weight: 9,
+        opacity: 0.78,
+        lineCap: "round",
+        lineJoin: "round"
+      },
+      {
+        color: "#235f4b",
+        weight: 5,
+        opacity: 0.92,
+        lineCap: "round",
+        lineJoin: "round"
+      }
+    ];
+    const smallLoopRouteStyles = [
+      {
+        color: "#fff8ec",
+        weight: 11,
+        opacity: 0.86,
+        lineCap: "round",
+        lineJoin: "round"
+      },
+      {
+        color: "#d97817",
+        weight: 5,
+        opacity: 0.96,
+        lineCap: "round",
+        lineJoin: "round"
+      }
+    ];
 
-    L.polyline(routeLatLngs, {
-      color: "#235f4b",
-      weight: 4,
-      opacity: 0.82,
-      lineJoin: "round"
-    }).addTo(map);
+    const drawRouteLayers = (latLngs, styles) => styles.map((style) => L.polyline(latLngs, style).addTo(map));
+    const replaceRouteLayers = (layers, latLngs, styles) => {
+      layers.forEach((layer) => map.removeLayer(layer));
+      return drawRouteLayers(latLngs, styles);
+    };
+    const keepLoopRouteOnTop = () => {
+      mainRouteLayers.forEach((layer) => layer.bringToFront());
+      smallLoopRouteLayers.forEach((layer) => layer.bringToFront());
+    };
+    const osrmRouteUrl = (routePlaces) => {
+      const coordinates = routePlaces
+        .map((place) => `${place.lng.toFixed(6)},${place.lat.toFixed(6)}`)
+        .join(";");
+      return `https://router.project-osrm.org/route/v1/driving/${coordinates}?overview=full&geometries=geojson&continue_straight=false`;
+    };
+    const fetchRoadLatLngs = async (routePlaces) => {
+      const response = await fetch(osrmRouteUrl(routePlaces));
+      if (!response.ok) throw new Error(`OSRM ${response.status}`);
 
-    L.polyline(closedSmallLoopLatLngs, {
-      color: "#fff8ec",
-      weight: 8,
-      opacity: 0.82,
-      lineCap: "round",
-      lineJoin: "round"
-    }).addTo(map);
+      const data = await response.json();
+      const coordinates = data.routes?.[0]?.geometry?.coordinates;
+      if (data.code !== "Ok" || !Array.isArray(coordinates) || coordinates.length < 2) {
+        throw new Error(data.message ?? "OSRM route geometry unavailable");
+      }
 
-    L.polyline(closedSmallLoopLatLngs, {
-      color: "#d97817",
-      weight: 4,
-      opacity: 0.95,
-      lineCap: "round",
-      lineJoin: "round"
-    }).addTo(map);
+      return coordinates.map(([lng, lat]) => [lat, lng]);
+    };
+    const useRoadRoute = async (routePlaces, styles, currentLayers, setLayers, label) => {
+      try {
+        const roadLatLngs = await fetchRoadLatLngs(routePlaces);
+        setLayers(replaceRouteLayers(currentLayers(), roadLatLngs, styles));
+        keepLoopRouteOnTop();
+      } catch (error) {
+        console.warn(`${label} road route unavailable; using waypoint fallback.`, error);
+      }
+    };
+
+    let mainRouteLayers = drawRouteLayers(routeLatLngs, mainRouteStyles);
+    let smallLoopRouteLayers = drawRouteLayers(closedSmallLoopLatLngs, smallLoopRouteStyles);
+    keepLoopRouteOnTop();
+    useRoadRoute(places, mainRouteStyles, () => mainRouteLayers, (layers) => { mainRouteLayers = layers; }, "Main");
+    useRoadRoute(closedSmallLoopPlaces, smallLoopRouteStyles, () => smallLoopRouteLayers, (layers) => { smallLoopRouteLayers = layers; }, "Small loop");
 
     places.forEach((place, index) => {
       const number = displayNumber(index);
