@@ -202,7 +202,7 @@
 
     .segment-list li {
       display: flex;
-      align-items: baseline;
+      align-items: flex-start;
       justify-content: space-between;
       gap: 10px;
       padding: 4px 0;
@@ -217,9 +217,12 @@
     }
 
     .segment-list span:last-child {
-      flex: 0 0 auto;
+      flex: 0 0 48%;
       font-weight: 700;
       color: #b15d00;
+      line-height: 1.35;
+      text-align: right;
+      white-space: normal;
     }
 
     .leaflet-tooltip.place-label {
@@ -261,8 +264,8 @@
       align-items: center;
       justify-content: center;
       flex-direction: column;
-      min-width: 74px;
-      min-height: 28px;
+      min-width: 78px;
+      min-height: 40px;
       box-sizing: border-box;
       padding: 3px 7px;
       border: 1px solid rgba(137, 74, 7, 0.3);
@@ -281,6 +284,23 @@
       color: #49564b;
       font-size: var(--distance-label-small-font-size);
       font-weight: 700;
+    }
+
+    .distance-marker .elevation-trend {
+      margin-top: 2px;
+      font-size: var(--distance-label-small-font-size);
+    }
+
+    .elevation-up {
+      color: #a03f00 !important;
+    }
+
+    .elevation-down {
+      color: #1e6a92 !important;
+    }
+
+    .elevation-flat {
+      color: #53645b !important;
     }
 
     .distance-marker.loop-distance-marker {
@@ -350,7 +370,7 @@
     <ol class="segment-list" id="smallLoopSegmentList"></ol>
     <h2 class="section-title">川藏线主线分段骑行里程与时间</h2>
     <ol class="segment-list" id="segmentList"></ol>
-    <p class="note">注：小环线 11-16 为图片新增节点，按公开地图近似定位。色季拉山口按 G318 鲁朗至林芝之间的山口代表位置取点。分段里程和时间调用 OSRM 路网 API 的 driving profile 估算，作为摩托车道路骑行近似值，不包含休息、拍照、加油、路况等待和本地摩托车禁限行规则。</p>
+    <p class="note">注：小环线 11-16 为图片新增节点，按公开地图近似定位。色季拉山口按 G318 鲁朗至林芝之间的山口代表位置取点。分段里程和时间调用 OSRM 路网 API 的 driving profile 估算，作为摩托车道路骑行近似值；海拔趋势按 Open-Meteo DEM 查询的相邻标注点净海拔差计算，不等同于道路累计爬升。</p>
   </aside>
 
   <script
@@ -359,30 +379,30 @@
     crossorigin=""></script>
   <script>
     const places = [
-      { name: "成都", lat: 30.659867, lng: 104.063315, labelDirection: "right", labelOffset: [8, 0] },
-      { name: "映秀", lat: 31.056495, lng: 103.486295, labelDirection: "top", labelOffset: [0, -8] },
-      { name: "猫鼻梁观景台", lat: 30.988997, lng: 102.842358, labelDirection: "bottom", labelOffset: [0, 9] },
-      { name: "四姑娘山", lat: 30.995599, lng: 102.830852, labelDirection: "top", labelOffset: [0, -8] },
-      { name: "丹巴县", lat: 30.879309, lng: 101.883298, labelDirection: "bottom", labelOffset: [0, 9] },
-      { name: "雅拉雪山", lat: 30.380818, lng: 101.699816, labelDirection: "right", labelOffset: [8, 0] },
-      { name: "墨石公园", lat: 30.449590, lng: 101.541669, labelDirection: "left", labelOffset: [-8, 0] },
-      { name: "姑弄村", lat: 30.355999, lng: 101.516590, labelDirection: "left", labelOffset: [-8, 0] },
-      { name: "塔公草原", lat: 30.337029, lng: 101.560724, labelDirection: "right", labelOffset: [8, 0] },
-      { name: "新都桥", lat: 30.046713, lng: 101.491804, labelDirection: "left", labelOffset: [-8, 0] },
-      { name: "雅江", lat: 30.035136, lng: 101.013923, labelDirection: "bottom", labelOffset: [0, 9] },
-      { name: "理塘", lat: 29.993978, lng: 100.267429, labelDirection: "top", labelOffset: [0, -8] },
-      { name: "巴塘", lat: 30.010120, lng: 99.112373, labelDirection: "top", labelOffset: [0, -8] },
-      { name: "芒康", lat: 29.683007, lng: 98.595084, labelDirection: "bottom", labelOffset: [0, 9] },
-      { name: "东达山口", lat: 29.710607, lng: 98.003150, labelDirection: "top", labelOffset: [0, -8] },
-      { name: "八宿", lat: 30.056198, lng: 96.917397, labelDirection: "top", labelOffset: [0, -8] },
-      { name: "然乌", lat: 29.505575, lng: 96.750917, labelDirection: "bottom", labelOffset: [0, 9] },
-      { name: "波密", lat: 29.861951, lng: 95.767064, labelDirection: "top", labelOffset: [0, -8] },
-      { name: "通麦", lat: 30.102619, lng: 95.084544, labelDirection: "top", labelOffset: [0, -8] },
-      { name: "色季拉山口", lat: 29.627306, lng: 94.657888, labelDirection: "bottom", labelOffset: [0, 9] },
-      { name: "林芝", lat: 29.651045, lng: 94.360232, labelDirection: "bottom", labelOffset: [0, 9] },
-      { name: "米拉山口", lat: 29.827323, lng: 92.343693, labelDirection: "top", labelOffset: [0, -8] },
-      { name: "拉萨", lat: 29.654205, lng: 91.117302, labelDirection: "bottom", labelOffset: [0, 9] },
-      { name: "日喀则", lat: 29.271376, lng: 88.880682, labelDirection: "left", labelOffset: [-8, 0] }
+      { name: "成都", lat: 30.659867, lng: 104.063315, elevation: 495, labelDirection: "right", labelOffset: [8, 0] },
+      { name: "映秀", lat: 31.056495, lng: 103.486295, elevation: 869, labelDirection: "top", labelOffset: [0, -8] },
+      { name: "猫鼻梁观景台", lat: 30.988997, lng: 102.842358, elevation: 3435, labelDirection: "bottom", labelOffset: [0, 9] },
+      { name: "四姑娘山", lat: 30.995599, lng: 102.830852, elevation: 3171, labelDirection: "top", labelOffset: [0, -8] },
+      { name: "丹巴县", lat: 30.879309, lng: 101.883298, elevation: 1875, labelDirection: "bottom", labelOffset: [0, 9] },
+      { name: "雅拉雪山", lat: 30.380818, lng: 101.699816, elevation: 5739, labelDirection: "right", labelOffset: [8, 0] },
+      { name: "墨石公园", lat: 30.449590, lng: 101.541669, elevation: 3702, labelDirection: "left", labelOffset: [-8, 0] },
+      { name: "姑弄村", lat: 30.355999, lng: 101.516590, elevation: 3770, labelDirection: "left", labelOffset: [-8, 0] },
+      { name: "塔公草原", lat: 30.337029, lng: 101.560724, elevation: 3843, labelDirection: "right", labelOffset: [8, 0] },
+      { name: "新都桥", lat: 30.046713, lng: 101.491804, elevation: 3469, labelDirection: "left", labelOffset: [-8, 0] },
+      { name: "雅江", lat: 30.035136, lng: 101.013923, elevation: 2622, labelDirection: "bottom", labelOffset: [0, 9] },
+      { name: "理塘", lat: 29.993978, lng: 100.267429, elevation: 3954, labelDirection: "top", labelOffset: [0, -8] },
+      { name: "巴塘", lat: 30.010120, lng: 99.112373, elevation: 2582, labelDirection: "top", labelOffset: [0, -8] },
+      { name: "芒康", lat: 29.683007, lng: 98.595084, elevation: 3870, labelDirection: "bottom", labelOffset: [0, 9] },
+      { name: "东达山口", lat: 29.710607, lng: 98.003150, elevation: 5096, labelDirection: "top", labelOffset: [0, -8] },
+      { name: "八宿", lat: 30.056198, lng: 96.917397, elevation: 3252, labelDirection: "top", labelOffset: [0, -8] },
+      { name: "然乌", lat: 29.505575, lng: 96.750917, elevation: 3925, labelDirection: "bottom", labelOffset: [0, 9] },
+      { name: "波密", lat: 29.861951, lng: 95.767064, elevation: 2728, labelDirection: "top", labelOffset: [0, -8] },
+      { name: "通麦", lat: 30.102619, lng: 95.084544, elevation: 2097, labelDirection: "top", labelOffset: [0, -8] },
+      { name: "色季拉山口", lat: 29.627306, lng: 94.657888, elevation: 4701, labelDirection: "bottom", labelOffset: [0, 9] },
+      { name: "林芝", lat: 29.651045, lng: 94.360232, elevation: 2992, labelDirection: "bottom", labelOffset: [0, 9] },
+      { name: "米拉山口", lat: 29.827323, lng: 92.343693, elevation: 5020, labelDirection: "top", labelOffset: [0, -8] },
+      { name: "拉萨", lat: 29.654205, lng: 91.117302, elevation: 3648, labelDirection: "bottom", labelOffset: [0, 9] },
+      { name: "日喀则", lat: 29.271376, lng: 88.880682, elevation: 3849, labelDirection: "left", labelOffset: [-8, 0] }
     ];
 
     const segmentDistancesKm = [
@@ -398,22 +418,22 @@
     ];
 
     const smallLoopPlaces = [
-      { number: 1, name: "成都", lat: 30.659867, lng: 104.063315, labelDirection: "right", labelOffset: [8, 0] },
-      { number: 2, name: "映秀", lat: 31.056495, lng: 103.486295, labelDirection: "right", labelOffset: [8, 0] },
-      { number: 3, name: "猫鼻梁观景台", lat: 30.988997, lng: 102.842358, labelDirection: "bottom", labelOffset: [0, 9] },
-      { number: 4, name: "四姑娘山", lat: 30.995599, lng: 102.830852, labelDirection: "top", labelOffset: [0, -8] },
-      { number: 5, name: "丹巴县", lat: 30.879309, lng: 101.883298, labelDirection: "bottom", labelOffset: [0, 9] },
-      { number: 6, name: "雅拉雪山", lat: 30.380818, lng: 101.699816, labelDirection: "right", labelOffset: [8, 0] },
-      { number: 7, name: "墨石公园", lat: 30.449590, lng: 101.541669, labelDirection: "left", labelOffset: [-8, 0] },
-      { number: 8, name: "姑弄村", lat: 30.355999, lng: 101.516590, labelDirection: "left", labelOffset: [-8, 0] },
-      { number: 9, name: "塔公草原", lat: 30.337029, lng: 101.560724, labelDirection: "right", labelOffset: [8, 0] },
-      { number: 10, name: "新都桥", lat: 30.046713, lng: 101.491804, labelDirection: "left", labelOffset: [-8, 0] },
-      { number: 11, name: "鱼子西", lat: 30.164478, lng: 101.600460, labelDirection: "bottom", labelOffset: [0, 9] },
-      { number: 12, name: "红海子", lat: 30.184337, lng: 101.775382, labelDirection: "top", labelOffset: [0, -8] },
-      { number: 13, name: "彩虹机场", lat: 30.142464, lng: 101.738720, labelDirection: "left", labelOffset: [-8, 0] },
-      { number: 14, name: "木格措", lat: 30.190276, lng: 101.903277, labelDirection: "right", labelOffset: [8, 0] },
-      { number: 15, name: "康定", lat: 30.051300, lng: 101.960300, labelDirection: "bottom", labelOffset: [0, 9] },
-      { number: 16, name: "雅安", lat: 30.013092, lng: 103.040204, labelDirection: "right", labelOffset: [8, 0] }
+      { number: 1, name: "成都", lat: 30.659867, lng: 104.063315, elevation: 495, labelDirection: "right", labelOffset: [8, 0] },
+      { number: 2, name: "映秀", lat: 31.056495, lng: 103.486295, elevation: 869, labelDirection: "right", labelOffset: [8, 0] },
+      { number: 3, name: "猫鼻梁观景台", lat: 30.988997, lng: 102.842358, elevation: 3435, labelDirection: "bottom", labelOffset: [0, 9] },
+      { number: 4, name: "四姑娘山", lat: 30.995599, lng: 102.830852, elevation: 3171, labelDirection: "top", labelOffset: [0, -8] },
+      { number: 5, name: "丹巴县", lat: 30.879309, lng: 101.883298, elevation: 1875, labelDirection: "bottom", labelOffset: [0, 9] },
+      { number: 6, name: "雅拉雪山", lat: 30.380818, lng: 101.699816, elevation: 5739, labelDirection: "right", labelOffset: [8, 0] },
+      { number: 7, name: "墨石公园", lat: 30.449590, lng: 101.541669, elevation: 3702, labelDirection: "left", labelOffset: [-8, 0] },
+      { number: 8, name: "姑弄村", lat: 30.355999, lng: 101.516590, elevation: 3770, labelDirection: "left", labelOffset: [-8, 0] },
+      { number: 9, name: "塔公草原", lat: 30.337029, lng: 101.560724, elevation: 3843, labelDirection: "right", labelOffset: [8, 0] },
+      { number: 10, name: "新都桥", lat: 30.046713, lng: 101.491804, elevation: 3469, labelDirection: "left", labelOffset: [-8, 0] },
+      { number: 11, name: "鱼子西", lat: 30.164478, lng: 101.600460, elevation: 3600, labelDirection: "bottom", labelOffset: [0, 9] },
+      { number: 12, name: "红海子", lat: 30.184337, lng: 101.775382, elevation: 4131, labelDirection: "top", labelOffset: [0, -8] },
+      { number: 13, name: "彩虹机场", lat: 30.142464, lng: 101.738720, elevation: 4237, labelDirection: "left", labelOffset: [-8, 0] },
+      { number: 14, name: "木格措", lat: 30.190276, lng: 101.903277, elevation: 2941, labelDirection: "right", labelOffset: [8, 0] },
+      { number: 15, name: "康定", lat: 30.051300, lng: 101.960300, elevation: 2532, labelDirection: "bottom", labelOffset: [0, 9] },
+      { number: 16, name: "雅安", lat: 30.013092, lng: 103.040204, elevation: 573, labelDirection: "right", labelOffset: [8, 0] }
     ];
 
     const smallLoopSegmentDistancesKm = [
@@ -446,6 +466,34 @@
       const hours = Math.floor(minutes / 60);
       const mins = minutes % 60;
       return hours > 0 ? `${hours}小时${mins}分` : `${mins}分`;
+    };
+    const formatElevation = (place) => `${Math.round(place.elevation)}m`;
+    const formatSignedElevation = (delta) => `${delta > 0 ? "+" : ""}${delta}m`;
+    const elevationTrend = (from, to) => {
+      const delta = Math.round(to.elevation - from.elevation);
+      const absDelta = Math.abs(delta);
+
+      if (absDelta < 50) {
+        return {
+          className: "elevation-flat",
+          label: `≈ ${formatSignedElevation(delta)}`,
+          detail: `基本持平 ${formatSignedElevation(delta)}`
+        };
+      }
+
+      if (delta > 0) {
+        return {
+          className: "elevation-up",
+          label: `↑ ${formatSignedElevation(delta)}`,
+          detail: `爬升 ${formatSignedElevation(delta)}`
+        };
+      }
+
+      return {
+        className: "elevation-down",
+        label: `↓ -${absDelta}m`,
+        detail: `下降 ${absDelta}m`
+      };
     };
 
     const map = L.map("map", {
@@ -504,7 +552,7 @@
           offset: place.labelOffset,
           className: "place-label"
         })
-        .bindPopup(`<strong>${number}. ${place.name}</strong><br>${place.lat.toFixed(6)}, ${place.lng.toFixed(6)}`);
+        .bindPopup(`<strong>${number}. ${place.name}</strong><br>${place.lat.toFixed(6)}, ${place.lng.toFixed(6)}<br>海拔约 ${formatElevation(place)}`);
 
       labelEntries.push({
         marker,
@@ -532,7 +580,7 @@
           offset: place.labelOffset,
           className: "place-label"
         })
-        .bindPopup(`<strong>${place.number}. ${place.name}</strong><br>${place.lat.toFixed(6)}, ${place.lng.toFixed(6)}`);
+        .bindPopup(`<strong>${place.number}. ${place.name}</strong><br>${place.lat.toFixed(6)}, ${place.lng.toFixed(6)}<br>海拔约 ${formatElevation(place)}`);
 
       labelEntries.push({
         marker,
@@ -547,15 +595,16 @@
       const fromNumber = displayNumber(index);
       const toNumber = displayNumber(index + 1);
       const durationText = formatDuration(segmentDurationsMin[index]);
+      const trend = elevationTrend(from, to);
       const midpoint = [
         (from.lat + to.lat) / 2,
         (from.lng + to.lng) / 2
       ];
       const icon = L.divIcon({
         className: "",
-        html: `<span class="distance-marker"><span>${fromNumber}-${toNumber} ${distance.toFixed(1)}km</span><small>${durationText}</small></span>`,
+        html: `<span class="distance-marker"><span>${fromNumber}-${toNumber} ${distance.toFixed(1)}km</span><small>${durationText}</small><small class="elevation-trend ${trend.className}">${trend.label}</small></span>`,
         iconSize: null,
-        iconAnchor: [34, 10]
+        iconAnchor: [39, 18]
       });
       const marker = L.marker(midpoint, {
         icon,
@@ -574,15 +623,16 @@
       const from = smallLoopTailPlaces[index];
       const to = smallLoopTailPlaces[index + 1];
       const durationText = formatDuration(smallLoopSegmentDurationsMin[index]);
+      const trend = elevationTrend(from, to);
       const midpoint = [
         (from.lat + to.lat) / 2,
         (from.lng + to.lng) / 2
       ];
       const icon = L.divIcon({
         className: "",
-        html: `<span class="distance-marker loop-distance-marker"><span>${from.number}-${to.number} ${distance.toFixed(1)}km</span><small>${durationText}</small></span>`,
+        html: `<span class="distance-marker loop-distance-marker"><span>${from.number}-${to.number} ${distance.toFixed(1)}km</span><small>${durationText}</small><small class="elevation-trend ${trend.className}">${trend.label}</small></span>`,
         iconSize: null,
-        iconAnchor: [34, 10]
+        iconAnchor: [39, 18]
       });
       const marker = L.marker(midpoint, {
         icon,
@@ -618,8 +668,9 @@
       const from = smallLoopTailPlaces[index];
       const to = smallLoopTailPlaces[index + 1];
       const durationText = formatDuration(smallLoopSegmentDurationsMin[index]);
+      const trend = elevationTrend(from, to);
       const item = document.createElement("li");
-      item.innerHTML = `<span>${from.number}-${to.number} ${from.name} → ${to.name}</span><span>${distance.toFixed(1)} km / ${durationText}</span>`;
+      item.innerHTML = `<span>${from.number}-${to.number} ${from.name} → ${to.name}</span><span>${distance.toFixed(1)} km / ${durationText} / ${trend.detail}</span>`;
       smallLoopSegmentList.appendChild(item);
     });
 
@@ -630,8 +681,9 @@
       const fromNumber = displayNumber(index);
       const toNumber = displayNumber(index + 1);
       const durationText = formatDuration(segmentDurationsMin[index]);
+      const trend = elevationTrend(from, to);
       const item = document.createElement("li");
-      item.innerHTML = `<span>${fromNumber}-${toNumber} ${from.name} → ${to.name}</span><span>${distance.toFixed(1)} km / ${durationText}</span>`;
+      item.innerHTML = `<span>${fromNumber}-${toNumber} ${from.name} → ${to.name}</span><span>${distance.toFixed(1)} km / ${durationText} / ${trend.detail}</span>`;
       segmentList.appendChild(item);
     });
 
@@ -672,6 +724,13 @@
       };
     };
 
+    const rectNearViewport = (rect, margin = 64) => (
+      rect.right >= -margin &&
+      rect.left <= window.innerWidth + margin &&
+      rect.bottom >= -margin &&
+      rect.top <= window.innerHeight + margin
+    );
+
     const filterOverlappingMapLabels = () => {
       const acceptedRects = [];
       distanceEntries
@@ -680,6 +739,8 @@
         .forEach(({ marker }) => {
           const element = marker.getElement().querySelector(".distance-marker") ?? marker.getElement();
           const rect = paddedRect(element, 5);
+          if (!rectNearViewport(rect)) return;
+
           const overlaps = acceptedRects.some((accepted) => rectsOverlap(rect, accepted));
 
           if (overlaps) {
@@ -696,6 +757,8 @@
       visibleLabels.forEach(({ marker }) => {
         const element = marker.getTooltip().getElement();
         const rect = paddedRect(element, 4);
+        if (!rectNearViewport(rect)) return;
+
         const overlaps = acceptedRects.some((accepted) => rectsOverlap(rect, accepted));
 
         if (overlaps) {
