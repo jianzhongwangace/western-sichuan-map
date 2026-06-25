@@ -359,9 +359,9 @@
   <div id="map"></div>
   <aside class="panel" aria-label="川西路线地点清单">
     <h1>川西地名标注地图</h1>
-    <p class="subtitle">按图片中的川西段、川西小环线和新增川藏线顺序标注，底图为 OpenStreetMap 真实地图。橙色闭环为新增川西小环线。</p>
+    <p class="subtitle">按图片中的川西段、川西小环线和新增川藏线顺序标注，底图为城市道路图。橙色闭环为新增川西小环线。</p>
     <p class="summary"><strong>川藏线主线 OSRM 估算里程 / 时间</strong><span>约 2466.3 km / 30小时51分</span></p>
-    <p class="loop-summary"><strong>新增川西小环线 1-16</strong><span>约 985.3 km / 15小时1分</span></p>
+    <p class="loop-summary"><strong>图片川西小环线 1-21</strong><span>约 1518.3 km / 19小时46分</span></p>
     <h2 class="section-title">川藏线主线节点</h2>
     <ol class="route-list" id="routeList"></ol>
     <h2 class="section-title">川西小环线新增点</h2>
@@ -370,7 +370,7 @@
     <ol class="segment-list" id="smallLoopSegmentList"></ol>
     <h2 class="section-title">川藏线主线分段骑行里程与时间</h2>
     <ol class="segment-list" id="segmentList"></ol>
-    <p class="note">注：小环线 11-16 为图片新增节点，按公开地图近似定位。色季拉山口按 G318 鲁朗至林芝之间的山口代表位置取点。分段里程、时间和道路曲线调用 OSRM 路网 API 的 driving profile 估算，作为摩托车道路骑行近似值；海拔趋势按 Open-Meteo DEM 查询的相邻标注点净海拔差计算，不等同于道路累计爬升。</p>
+    <p class="note">注：小环线 11-21 为图片新增或补充节点，按公开地图近似定位。色季拉山口按 G318 鲁朗至林芝之间的山口代表位置取点。分段里程、时间和道路曲线调用 OSRM 路网 API 的 driving profile 估算，作为摩托车道路骑行近似值；海拔趋势按 Open-Meteo DEM 查询的相邻标注点净海拔差计算，不等同于道路累计爬升。</p>
   </aside>
 
   <script
@@ -422,36 +422,41 @@
       { number: 2, name: "映秀", lat: 31.056495, lng: 103.486295, elevation: 869, labelDirection: "right", labelOffset: [8, 0] },
       { number: 3, name: "猫鼻梁观景台", lat: 30.988997, lng: 102.842358, elevation: 3435, labelDirection: "bottom", labelOffset: [0, 9] },
       { number: 4, name: "四姑娘山", lat: 30.995599, lng: 102.830852, elevation: 3171, labelDirection: "top", labelOffset: [0, -8] },
+      { number: 17, name: "甲居藏寨", lat: 30.900650, lng: 101.878970, elevation: 2200, labelDirection: "left", labelOffset: [-8, 0] },
       { number: 5, name: "丹巴县", lat: 30.879309, lng: 101.883298, elevation: 1875, labelDirection: "bottom", labelOffset: [0, 9] },
-      { number: 6, name: "雅拉雪山", lat: 30.380818, lng: 101.699816, elevation: 5739, labelDirection: "right", labelOffset: [8, 0] },
+      { number: 18, name: "色达", lat: 32.268700, lng: 100.331900, elevation: 3896, labelDirection: "left", labelOffset: [-8, 0] },
+      { number: 19, name: "八美", lat: 30.482582, lng: 101.484940, elevation: 3500, labelDirection: "left", labelOffset: [-8, 0] },
       { number: 7, name: "墨石公园", lat: 30.449590, lng: 101.541669, elevation: 3702, labelDirection: "left", labelOffset: [-8, 0] },
-      { number: 8, name: "姑弄村", lat: 30.355999, lng: 101.516590, elevation: 3770, labelDirection: "left", labelOffset: [-8, 0] },
       { number: 9, name: "塔公草原", lat: 30.337029, lng: 101.560724, elevation: 3843, labelDirection: "right", labelOffset: [8, 0] },
       { number: 10, name: "新都桥", lat: 30.046713, lng: 101.491804, elevation: 3469, labelDirection: "left", labelOffset: [-8, 0] },
       { number: 11, name: "鱼子西", lat: 30.164478, lng: 101.600460, elevation: 3600, labelDirection: "bottom", labelOffset: [0, 9] },
       { number: 12, name: "红海子", lat: 30.184337, lng: 101.775382, elevation: 4131, labelDirection: "top", labelOffset: [0, -8] },
-      { number: 13, name: "彩虹机场", lat: 30.142464, lng: 101.738720, elevation: 4237, labelDirection: "left", labelOffset: [-8, 0] },
+      { number: 20, name: "折多山", lat: 30.079150, lng: 101.778790, elevation: 4298, labelDirection: "left", labelOffset: [-8, 0] },
       { number: 14, name: "木格措", lat: 30.190276, lng: 101.903277, elevation: 2941, labelDirection: "right", labelOffset: [8, 0] },
       { number: 15, name: "康定", lat: 30.051300, lng: 101.960300, elevation: 2532, labelDirection: "bottom", labelOffset: [0, 9] },
+      { number: 21, name: "泸定", lat: 29.914105, lng: 102.234803, elevation: 1320, labelDirection: "right", labelOffset: [8, 0] },
       { number: 16, name: "雅安", lat: 30.013092, lng: 103.040204, elevation: 573, labelDirection: "right", labelOffset: [8, 0] }
     ];
 
     const smallLoopSegmentDistancesKm = [
-      24.9, 44.3, 16.4, 51.0, 19.7, 146.3, 135.9
+      78.6, 114.8, 7.4, 113.2, 2.9, 378.1, 295.6, 8.4, 17.1,
+      43.9, 24.9, 44.3, 25.2, 57.4, 19.7, 48.9, 101.8, 135.9
     ];
 
     const smallLoopSegmentDurationsMin = [
-      31, 63, 33, 59, 20, 106, 95
+      57, 83, 7, 81, 3, 268, 210, 10, 19,
+      35, 31, 63, 39, 53, 20, 37, 75, 95
     ];
 
     const smallLoopOnlyPlaces = smallLoopPlaces.filter((place) => place.number >= 11);
-    const smallLoopTailPlaces = [smallLoopPlaces[9], ...smallLoopOnlyPlaces, smallLoopPlaces[0]];
+    const smallLoopTailPlaces = [...smallLoopPlaces, smallLoopPlaces[0]];
 
-    const displayNumber = (index) => index <= 9 ? index + 1 : index + 7;
+    const smallLoopMaxNumber = Math.max(...smallLoopOnlyPlaces.map((place) => place.number));
+    const displayNumber = (index) => index <= 9 ? index + 1 : index + smallLoopMaxNumber - 9;
     const mainLabelMinZoom = (index) => {
       const number = displayNumber(index);
-      if ([1, 10, 17, 21, 25, 29, 30].includes(number)) return 5;
-      if ([5, 18, 23, 27].includes(number)) return 6;
+      if ([1, 10, 22, 26, 30, 34, 35].includes(number)) return 5;
+      if ([5, 23, 28, 32].includes(number)) return 6;
       return 7;
     };
     const smallLoopLabelMinZoom = () => 7;
